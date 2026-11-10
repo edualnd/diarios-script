@@ -1,0 +1,19 @@
+# Sessão de login do Chrome (cookies) — NUNCA enviar
+programa/.perfil-chrome/
+
+# Configurações e calendários salvos pelo programa
+programa/configuracoes.json
+
+# PDFs baixados e gerados: têm nomes e frequência dos alunos (dados pessoais)
+Resultados/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Sistema / editor
+.DS_Store
+.vscode/
+.idea/
