@@ -26,6 +26,17 @@ def abrir(p, headless):
         PERFIL, channel="chrome", headless=headless, viewport={"width": 1600, "height": 1000})
 
 
+def _carregou(pagina_ok, page, url):
+    """Chama `pagina_ok`, mas trata "o site não respondeu" como "não carregou"."""
+    try:
+        return pagina_ok(page, url), True
+    except Exception as e:
+        if "Timeout" not in str(e) and "net::" not in str(e):
+            raise
+        print(f"O site não respondeu: {str(e).splitlines()[0]}")
+        return False, False
+
+
 def ir(page, url, timeout=60000):
     """Abre a página sem exigir que a rede fique parada: em redes com proxy
     algum recurso externo (estatística, fontes) pode ficar travado para sempre."""
@@ -56,22 +67,31 @@ def sessao(p, url, pagina_ok):
     visível para a pessoa entrar e tenta de novo. `pagina_ok(page, url)` diz se carregou."""
     ctx = abrir(p, headless=True)        # gerar PDF só funciona no modo invisível
     page = ctx.new_page()
-    if pagina_ok(page, url):
+    ok, _ = _carregou(pagina_ok, page, url)
+    if ok:
         return ctx, page
     ctx.close()
 
     print("\nÉ preciso entrar no sistema. O Chrome vai abrir: faça o login nele.")
     ctx = abrir(p, headless=False)
     pg = ctx.pages[0] if ctx.pages else ctx.new_page()
-    pg.goto(url, wait_until="commit", timeout=60000)   # a pessoa vê a página carregar
+    try:
+        pg.goto(url, wait_until="commit", timeout=60000)   # a pessoa vê a página carregar
+    except Exception as e:
+        print(f"O site não abriu no Chrome: {str(e).splitlines()[0]}")
     aguardar_login()
     ctx.close()
 
     ctx = abrir(p, headless=True)
     page = ctx.new_page()
-    if pagina_ok(page, url):
+    ok, respondeu = _carregou(pagina_ok, page, url)
+    if ok:
         print("Login feito.\n")
         return ctx, page
     ctx.close()
+    if not respondeu:
+        raise Parar("O Chrome aberto pelo programa não conseguiu acessar o site.\n\n"
+                    "Provavelmente o proxy da rede está bloqueando. Confira se o site "
+                    "abriu na janela do Chrome que apareceu para o login.")
     raise Parar("Não foi possível entrar no sistema.\n\n"
                 "Confira se o login deu certo e se os números das salas estão corretos.")
