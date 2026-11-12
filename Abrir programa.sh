@@ -14,6 +14,6 @@ MSG="Faltam programas para rodar os Diários.
 
 Peça para alguém rodar no terminal, dentro desta pasta:
   pip install -r requirements.txt
-  sudo apt install python3-tk poppler-utils"
+  sudo apt install python3-tk"
 zenity --error --title="Diários de Classe" --text="$MSG" 2>/dev/null || echo "$MSG"
 exit 1

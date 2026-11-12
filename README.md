@@ -9,8 +9,8 @@ Programa que, para cada sala:
 
 ## Como usar
 
-1. Dê **dois cliques** em **`Abrir programa.sh`**.
-   Se o arquivo abrir num editor de texto em vez de rodar, clique nele com o botão direito e escolha **"Executar como um programa"**.
+1. Dê **dois cliques** em **`Abrir programa.bat`** (Windows) ou **`Abrir programa.sh`** (Linux).
+   No Linux, se o arquivo abrir num editor de texto em vez de rodar, clique nele com o botão direito e escolha **"Executar como um programa"**.
 2. Na janela:
    - escolha o **bimestre**;
    - confira os **números das salas**: é o número que aparece no endereço da sala no sistema, por exemplo `.../atividade/sala/780/diario`;
@@ -34,9 +34,13 @@ A pasta `programa/` tem o código e as configurações. Não precisa mexer nela.
 
 ## Instalação (só uma vez, em um computador novo)
 
-Precisa do Google Chrome instalado. No terminal, dentro desta pasta:
+Precisa do **Google Chrome** instalado.
+
+**Windows** (não precisa de internet): instale o **Python 3.15** e dê dois cliques em **`Instalar dependencias.bat`**. Ele instala os pacotes que estão na pasta `dependencias/`.
+
+**Linux**: no terminal, dentro desta pasta:
 
 ```bash
-sudo apt install python3-tk poppler-utils
+sudo apt install python3-tk
 pip install -r requirements.txt
 ```

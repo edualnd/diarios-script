@@ -1,10 +1,10 @@
 """Baixa os diários de classe e lê os dias letivos de cada um."""
 import os
 import re
-import subprocess
 
 from playwright.sync_api import TimeoutError as PWTimeout
 from playwright.sync_api import sync_playwright
+from pypdf import PdfReader
 
 from navegador import BASE, MARGENS, fundo_branco, sessao
 
@@ -68,9 +68,7 @@ def baixar(bim, salas, disciplina, pasta):
 
 def _texto_pdf(caminho):
     """Texto da 1ª página do PDF mantendo o layout das colunas."""
-    r = subprocess.run(["pdftotext", "-layout", "-f", "1", "-l", "1", caminho, "-"],
-                       capture_output=True, text=True, check=True)
-    return r.stdout
+    return PdfReader(caminho).pages[0].extract_text(extraction_mode="layout")
 
 
 def _agrupar_por_mes(dias):

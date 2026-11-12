@@ -62,7 +62,10 @@ def pasta_resultados(bim, ano):
 
 def abrir_pasta(pasta):
     os.makedirs(pasta, exist_ok=True)
-    subprocess.Popen(["xdg-open", pasta], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if sys.platform == "win32":
+        os.startfile(pasta)
+    else:
+        subprocess.Popen(["xdg-open", pasta], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def fmt(d):
@@ -82,9 +85,6 @@ def ler_data(texto, ano):
 
 def processar(bim, ano, salas, disciplina, calendario, apagar_baixados, etapa):
     """Roda as 4 etapas. `etapa(n, texto)` avisa a janela. Retorna um resumo."""
-    if not shutil.which("pdftotext"):
-        raise Parar("Falta instalar o programa 'pdftotext'.\n\n"
-                    "No terminal: sudo apt install poppler-utils")
     import diarios
     import habilidades
     import juntar
