@@ -17,3 +17,6 @@ venv/
 .DS_Store
 .vscode/
 .idea/
+
+# Pacotes baixados para instalar sem internet (grandes)
+dependencias/
