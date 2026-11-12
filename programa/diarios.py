@@ -6,7 +6,7 @@ from playwright.sync_api import TimeoutError as PWTimeout
 from playwright.sync_api import sync_playwright
 from pypdf import PdfReader
 
-from navegador import BASE, MARGENS, fundo_branco, sessao
+from navegador import BASE, MARGENS, fundo_branco, ir, rede_parada, sessao
 
 URL = BASE + "/diario/sala/{sala}/bimestre/{bim}/disciplina/{disc}/diario"
 MARCADOR = "Diário de Classe"   # texto que só aparece na página do diário (logado)
@@ -18,11 +18,11 @@ MESES = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO",
 
 def carregar(page, url):
     """Abre a página e espera o diário aparecer. Retorna True se carregou."""
-    page.goto(url, wait_until="networkidle", timeout=60000)
+    ir(page, url)
     try:
-        page.get_by_text(MARCADOR).first.wait_for(timeout=15000)
-        page.get_by_text("Alunos").first.wait_for(timeout=15000)
-        page.wait_for_load_state("networkidle")
+        page.get_by_text(MARCADOR).first.wait_for(timeout=30000)
+        page.get_by_text("Alunos").first.wait_for(timeout=30000)
+        rede_parada(page)
         return True
     except PWTimeout:
         return False

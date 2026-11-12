@@ -12,7 +12,7 @@ from playwright.sync_api import Error as PWError
 from playwright.sync_api import TimeoutError as PWTimeout
 from playwright.sync_api import sync_playwright
 
-from navegador import BASE, MARGENS, fundo_branco, sessao
+from navegador import BASE, MARGENS, fundo_branco, ir, sessao
 
 URL_SALA = BASE + "/atividade/sala/{sala}/diario"
 URL_DOC = BASE + "/documentos/sala/{sala}/bimestre/{bim}/professor/{prof}/disciplina/{disc}/habilidades"
@@ -25,9 +25,9 @@ def limpar(texto):
 
 
 def _sala_carregou(page, url):
-    page.goto(url, wait_until="networkidle", timeout=60000)
+    ir(page, url)
     try:
-        page.locator("#professores").wait_for(state="attached", timeout=15000)
+        page.locator("#professores").wait_for(state="attached", timeout=30000)
         return True
     except PWTimeout:
         return False
@@ -51,7 +51,7 @@ def _salvar(page, url, destino):
 
     page.on("download", ao_baixar)
     try:
-        page.goto(url, wait_until="networkidle", timeout=90000)
+        ir(page, url, timeout=90000)
     except PWError as e:
         if "Download is starting" not in str(e) and "ERR_ABORTED" not in str(e):
             raise

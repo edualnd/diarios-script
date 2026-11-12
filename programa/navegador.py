@@ -26,6 +26,21 @@ def abrir(p, headless):
         PERFIL, channel="chrome", headless=headless, viewport={"width": 1600, "height": 1000})
 
 
+def ir(page, url, timeout=60000):
+    """Abre a página sem exigir que a rede fique parada: em redes com proxy
+    algum recurso externo (estatística, fontes) pode ficar travado para sempre."""
+    page.goto(url, wait_until="domcontentloaded", timeout=timeout)
+    rede_parada(page)
+
+
+def rede_parada(page, timeout=10000):
+    """Espera a página parar de carregar coisas, mas desiste depois de `timeout`."""
+    try:
+        page.wait_for_load_state("networkidle", timeout=timeout)
+    except Exception:
+        pass
+
+
 def fundo_branco(page):
     """O site tem fundo cinza em volta do documento; no PDF ele aparece como um
     bloco cinza no fim das páginas. Deixa tudo branco antes de imprimir."""
@@ -48,7 +63,7 @@ def sessao(p, url, pagina_ok):
     print("\nÉ preciso entrar no sistema. O Chrome vai abrir: faça o login nele.")
     ctx = abrir(p, headless=False)
     pg = ctx.pages[0] if ctx.pages else ctx.new_page()
-    pg.goto(url)
+    pg.goto(url, wait_until="commit", timeout=60000)   # a pessoa vê a página carregar
     aguardar_login()
     ctx.close()
 
