@@ -456,11 +456,56 @@ class App:
                 "Isso pode levar alguns minutos. Pode continuar usando o computador.\n\n"
                 "Começar?")):
             return
+        if not self.pedir_proxy():
+            return
 
         self.limpar_log()
         self.travar(True)
         args = (bim, ano, range(ini, fim + 1), self.cfg["disciplina"], calendario, apagar)
         threading.Thread(target=self.trabalhar, args=args, daemon=True).start()
+
+    def pedir_proxy(self):
+        """Se o Windows usa proxy, pede usuário e senha dele uma vez por vez que o
+        programa é aberto. Retorna False se a pessoa cancelar."""
+        proxy = navegador.proxy_do_windows()
+        if not proxy or navegador.credenciais_proxy:
+            return True
+        janela = tk.Toplevel(self.root)
+        janela.title("Proxy da rede")
+        janela.transient(self.root)
+        janela.resizable(False, False)
+        quadro = ttk.Frame(janela, padding=16)
+        quadro.pack()
+        ttk.Label(quadro, text=("A rede usa o proxy " + proxy["server"].split("://")[-1] + ".\n"
+                                "Digite o usuário e a senha dele (os mesmos que o\n"
+                                "Chrome pede). A senha não fica salva."),
+                  justify="left").grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
+        ttk.Label(quadro, text="Usuário:").grid(row=1, column=0, sticky="w")
+        e_usuario = ttk.Entry(quadro, width=28)
+        e_usuario.grid(row=1, column=1, pady=2)
+        ttk.Label(quadro, text="Senha:").grid(row=2, column=0, sticky="w")
+        e_senha = ttk.Entry(quadro, width=28, show="•")
+        e_senha.grid(row=2, column=1, pady=2)
+        resposta = []
+
+        def ok(_evento=None):
+            if e_usuario.get().strip():
+                resposta.append((e_usuario.get().strip(), e_senha.get()))
+                janela.destroy()
+
+        botoes = ttk.Frame(quadro)
+        botoes.grid(row=3, column=0, columnspan=2, pady=(12, 0), sticky="e")
+        ttk.Button(botoes, text="Cancelar", command=janela.destroy).pack(side="right")
+        ttk.Button(botoes, text="OK", command=ok).pack(side="right", padx=(0, 6))
+        janela.bind("<Return>", ok)
+        janela.bind("<Escape>", lambda _e: janela.destroy())
+        e_usuario.focus_set()
+        janela.grab_set()
+        self.root.wait_window(janela)
+        if not resposta:
+            return False
+        navegador.credenciais_proxy = resposta[0]
+        return True
 
     def trabalhar(self, *args):
         saida = SaidaNaJanela(self.fila)

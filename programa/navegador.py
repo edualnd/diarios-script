@@ -21,9 +21,53 @@ def _aguardar_login_terminal():
 aguardar_login = _aguardar_login_terminal
 
 
+# Usuário e senha do proxy, (usuario, senha). A janela preenche ao clicar em
+# "Começar"; fica só na memória, nunca é salvo em arquivo.
+credenciais_proxy = None
+
+
 def abrir(p, headless):
-    return p.chromium.launch_persistent_context(
-        PERFIL, channel="chrome", headless=headless, viewport={"width": 1600, "height": 1000})
+    proxy = proxy_do_windows()
+    if proxy and credenciais_proxy:
+        proxy["username"], proxy["password"] = credenciais_proxy
+    ctx = p.chromium.launch_persistent_context(
+        PERFIL, channel="chrome", headless=headless, viewport={"width": 1600, "height": 1000},
+        proxy=proxy)
+    # A página do diário chama window.print() sozinha ao carregar. Essa impressão
+    # fica "aberta" e o PDF do programa falha com "Page is already being printed".
+    ctx.add_init_script("window.print = () => {};")
+    return ctx
+
+
+def proxy_do_windows():
+    """Proxy configurado no Windows (o mesmo que o Chrome comum usa), no formato
+    do Playwright. Passando ele ao Chrome do programa junto com usuário e senha,
+    todas as páginas e downloads já saem autenticados, sem pedir login a cada
+    janela. Fora do Windows, ou sem proxy, retorna None."""
+    if os.name != "nt":
+        return None
+    import winreg
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                            r"Software\Microsoft\Windows\CurrentVersion\Internet Settings") as k:
+            if not winreg.QueryValueEx(k, "ProxyEnable")[0]:
+                return None
+            servidor = winreg.QueryValueEx(k, "ProxyServer")[0]
+            try:
+                excecoes = winreg.QueryValueEx(k, "ProxyOverride")[0]
+            except OSError:
+                excecoes = ""
+    except OSError:
+        return None
+    if "=" in servidor:   # formato "http=host:porta;https=host:porta"
+        partes = dict(p.split("=", 1) for p in servidor.split(";") if "=" in p)
+        servidor = partes.get("https") or partes.get("http") or next(iter(partes.values()), "")
+    if not servidor:
+        return None
+    if "://" not in servidor:
+        servidor = "http://" + servidor
+    excecoes = [e.strip() for e in excecoes.split(";") if e.strip() and e.strip() != "<local>"]
+    return {"server": servidor, "bypass": ",".join(excecoes) or None}
 
 
 def _carregou(pagina_ok, page, url):
@@ -37,10 +81,33 @@ def _carregou(pagina_ok, page, url):
         return False, False
 
 
-def ir(page, url, timeout=60000):
+def _senha_proxy_errada():
+    global credenciais_proxy
+    credenciais_proxy = None          # pede de novo no próximo "Começar"
+    return Parar("O proxy da rede recusou o usuário ou a senha.\n\n"
+                 "Clique em Começar de novo para digitar outra vez.")
+
+
+def ir(page, url, timeout=70000):
     """Abre a página sem exigir que a rede fique parada: em redes com proxy
     algum recurso externo (estatística, fontes) pode ficar travado para sempre."""
-    page.goto(url, wait_until="domcontentloaded", timeout=timeout)
+    recusou = []
+
+    def ver_resposta(r):
+        if r.status == 407:           # 407 = o proxy pediu login e não aceitou
+            recusou.append(r.url)
+
+    page.on("response", ver_resposta)
+    try:
+        page.goto(url, wait_until="domcontentloaded", timeout=timeout)
+    except Exception as e:
+        if recusou or "PROXY_AUTH" in str(e):
+            raise _senha_proxy_errada()
+        raise
+    finally:
+        page.remove_listener("response", ver_resposta)
+    if recusou:
+        raise _senha_proxy_errada()
     rede_parada(page)
 
 
